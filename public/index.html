@@ -1,0 +1,91 @@
+<html>
+<head>
+<title>Crossroads</title>
+<link rel="stylesheet" href="css/index.css"></link>
+<script type="text/javascript" hrer="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+</head>
+
+<body>
+
+<h1>Crossroads</h1>
+
+<div id="adjacentblocks">
+
+<div id="worldframe">
+	<canvas id="worldcanvas" width="1400px" height="1000px"></canvas>
+</div>
+
+<div id="submitnew">
+<input type="text" id="nodename" value="node name"></input>
+<input type="text" id="tag1" value="tag1"></input>
+<input type="text" id="tag2" value="tag2"></input>
+<input type="text" id="tag3" value="tag3"></input>
+<button id="upload" onclick="sendNewPostToServer()">Upload</button>
+</div>
+
+</div>
+
+<script type="text/javascript">
+	var socket = io();
+
+	function sendNewPostToServer(){
+		socket.emit('sendNewPostToServer', {
+			nodename: document.getElementById('nodename').value,
+			tag1: document.getElementById('tag1').value,
+			tag2: document.getElementById('tag2').value,
+			tag3: document.getElementById('tag3').value
+		});
+
+	}
+
+	function getMousePos(canvas, event) {
+		var rect = canvas.getBoundingClientRect();
+		return {
+			x: event.clientX - rect.left,
+			y: event.clientY - rect.top
+		};
+	}
+	function isInside(pos, rect){
+		return pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y
+	}
+
+	var canvas = document.getElementById('worldcanvas');
+	var context = canvas.getContext('2d');
+	var rect = {
+		x:250,
+		y:350,
+		width:200,
+		height:100
+	};
+
+
+	context.beginPath();
+	context.rect(250, 350, 200, 100); 
+	context.fillStyle = '#FFFFFF'; 
+	context.fillStyle = 'rgba(225,225,225,0.5)';
+	context.fillRect(25,72,32,32);
+	context.fill(); 
+	context.lineWidth = 2;
+	context.strokeStyle = '#000000'; 
+	context.stroke();
+	context.closePath();
+	context.font = '40pt Kremlin Pro Web';
+	context.fillStyle = '#000000';
+	context.fillText('Start', 345, 415);
+
+
+	canvas.addEventListener('click', function(evt) {
+		var mousePos = getMousePos(canvas, evt);
+	    //debugger;
+		if (isInside(mousePos,rect)) {
+			context.fillStyle = '#CEFCE3';
+			alert('clicked inside rect');
+	    }else{
+	        alert('clicked outside rect');
+	    }	
+	}, false);
+</script>
+
+</body>
+
+</html>

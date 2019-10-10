@@ -1,0 +1,19 @@
+#worldframe{
+	max-width: 700px;
+	max-height: 500px;
+	overflow: scroll;
+}
+
+#worldcanvas{
+	width: 1400px;
+	height: 1000px;
+	background-color: gray;
+}
+
+#submitnew{
+	background-color: red;
+}
+
+#adjacentblocks{
+	display: inline-block;
+}

@@ -1,0 +1,19 @@
+{
+  "name": "crossroads",
+  "version": "1.0.0",
+  "description": "Posts are nodes on \"roads\", each road represents a tag, where roads intersect are posts that have 2 or more relevant tags",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/austincap/crossroads.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/austincap/crossroads/issues"
+  },
+  "homepage": "https://github.com/austincap/crossroads#readme"
+}
