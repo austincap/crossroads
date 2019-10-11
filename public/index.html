@@ -2,7 +2,7 @@
 <head>
 <title>Crossroads</title>
 <link rel="stylesheet" href="css/index.css"></link>
-<script type="text/javascript" hrer="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
 </head>
 
 <body>
@@ -27,6 +27,7 @@
 
 <script type="text/javascript">
 	var socket = io();
+	socket.emit('retrieveDatabase');
 
 	function sendNewPostToServer(){
 		socket.emit('sendNewPostToServer', {
@@ -35,8 +36,15 @@
 			tag2: document.getElementById('tag2').value,
 			tag3: document.getElementById('tag3').value
 		});
-
 	}
+
+	function handleRetrievedDatabase(results){
+		console.log(results);
+	}
+
+	socket.on('sendDatabase', function(results){
+		handleRetrievedDatabase(results);
+	});
 
 	function getMousePos(canvas, event) {
 		var rect = canvas.getBoundingClientRect();

@@ -13,14 +13,12 @@ app.use(express.static('public'));
 io.on('connection', function(socket){
 	socket.on('sendNewPostToServer', function(infoToAdd){
       var query = `
-      CREATE (n:Crosspost {name:{nodename}})
-      MATCH (whomadeit:User {userID:{userID}}), (repliedBlock:Block {blockID:{replyto}}), (room:Room {name: {currentRoom}})
-      MERGE (newblock:Block {blockID:{blockID}, upvotes:{upvotes}, x:{x}, y:{y}, type:{type}, url:{url}})
-      MERGE (repliedBlock)<-[r:LABELS]-(newblock)<-[ra:CREATED]-(whomadeit)
-      MERGE (room)-[:CONTAINS]->(newblock)
-      RETURN (newblock), (repliedBlock)
+      MERGE (n:Crosspost {name:{nodename}})
+      MERGE (t1:Tag {name:{tag1}}), (t2:Tag {name:{tag2}}), (t3:Tag {name:{tag3}})
+      MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
+      MERGE (n)-[:TAGGED {upvotes:1}]->(t3)
       `;
-      this.db.cypher({
+      db.cypher({
         query: query,
         params: {
           nodename: infoToAdd.nodename,
@@ -33,7 +31,23 @@ io.on('connection', function(socket){
         callback(null, results);
       });
     }); 
+
+    socket.on('retrieveDatabase', function(infoToAdd){
+    	var query = `
+    	MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag) RETURN a, t, b
+    	`;
+    	db.cypher({
+    		query: query
+    	}, function(err, results){
+	        if(err){console.error('Error in retrieveDatabase', err);}
+	        socket.emit('sendDatabase', results);
+    	});
+    });
 });
+
+function retrieveDatabase(results){
+
+}
 
 
 http.listen(80, function (){
