@@ -29,6 +29,15 @@
 	var socket = io();
 	socket.emit('retrieveDatabase');
 
+	var canvas = document.getElementById('worldcanvas');
+	var context = canvas.getContext('2d');
+	var rect = {
+		x:250,
+		y:350,
+		width:200,
+		height:100
+	};
+
 	function sendNewPostToServer(){
 		socket.emit('sendNewPostToServer', {
 			nodename: document.getElementById('nodename').value,
@@ -39,6 +48,18 @@
 	}
 
 	function handleRetrievedDatabase(results){
+		var xpos = 345;
+		for(i=0; i<results.length; i++){
+			context.beginPath();
+			context.rect(250, 350, 200, 100);
+			context.fillStyle = '#FFFFFF'; 
+			context.fillStyle = 'rgba(225,225,225,0.5)';
+			context.closePath();
+			context.font = '40pt Kremlin Pro Web';
+			context.fillStyle = '#000000';
+			console.log(results[i]);
+			context.fillText(results[i]['post'], xpos+i*xpos, 415);
+		}
 		console.log(results);
 	}
 
@@ -57,14 +78,7 @@
 		return pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y
 	}
 
-	var canvas = document.getElementById('worldcanvas');
-	var context = canvas.getContext('2d');
-	var rect = {
-		x:250,
-		y:350,
-		width:200,
-		height:100
-	};
+
 
 
 	context.beginPath();

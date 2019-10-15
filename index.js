@@ -34,7 +34,13 @@ io.on('connection', function(socket){
 
     socket.on('retrieveDatabase', function(infoToAdd){
     	var query = `
-    	MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag) RETURN a, t, b
+    	MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
+		WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
+		ORDER BY upvotes DESC 
+		WITH post, collect([tag, upvotes])[0..3] AS toptags
+		UNWIND toptags AS toptagsupvotes
+		RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
+		ORDER BY post, upvotes DESC
     	`;
     	db.cypher({
     		query: query
@@ -44,6 +50,18 @@ io.on('connection', function(socket){
     	});
     });
 });
+
+
+// MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
+// WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
+// ORDER BY upvotes DESC 
+// WITH post, collect([tag, upvotes])[0..3] AS toptags
+// UNWIND toptags AS toptagsupvotes
+// RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
+// ORDER BY post, upvotes DESC
+
+
+
 
 function retrieveDatabase(results){
 
