@@ -40,7 +40,7 @@ io.on('connection', function(socket){
 		WITH post, collect([tag, upvotes])[0..3] AS toptags
 		UNWIND toptags AS toptagsupvotes
 		RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
-		ORDER BY post, upvotes DESC
+		ORDER BY tagname DESC
     	`;
     	db.cypher({
     		query: query
@@ -59,6 +59,7 @@ io.on('connection', function(socket){
 // UNWIND toptags AS toptagsupvotes
 // RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
 // ORDER BY post, upvotes DESC
+
 
 
 
