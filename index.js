@@ -34,13 +34,14 @@ io.on('connection', function(socket){
 
     socket.on('retrieveDatabase', function(infoToAdd){
     	var query = `
-    	MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
-		WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
-		ORDER BY upvotes DESC 
-		WITH post, collect([tag, upvotes])[0..3] AS toptags
-		UNWIND toptags AS toptagsupvotes
-		RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
-		ORDER BY tagname DESC
+      MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
+      WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
+      ORDER BY upvotes DESC 
+      WITH post, COLLECT([tag, upvotes])[0..3] AS toptags
+      UNWIND toptags AS toptagsupvotes
+      WITH post, COLLECT(toptagsupvotes) AS tags
+      RETURN post, tags
+      ORDER BY post DESC
     	`;
     	db.cypher({
     		query: query
@@ -52,16 +53,60 @@ io.on('connection', function(socket){
 });
 
 
+
+      // MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
+      // WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
+      // ORDER BY upvotes DESC 
+      // WITH post, collect([tag, upvotes])[0..3] AS toptags
+      // UNWIND toptags AS toptagsupvotes
+      // RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
+      // ORDER BY tagname DESC
+
+
+//TOP 3 categories returns post, [[cat1],[cat2],[cat3]]
 // MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
-// WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
-// ORDER BY upvotes DESC 
-// WITH post, collect([tag, upvotes])[0..3] AS toptags
-// UNWIND toptags AS toptagsupvotes
-// RETURN post, toptagsupvotes[0] AS tagname, toptagsupvotes[1] AS upvotes
-// ORDER BY post, upvotes DESC
+//       WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
+//       ORDER BY upvotes DESC 
+//       WITH post, COLLECT([tag, upvotes])[0..3] AS toptags
+//       UNWIND toptags AS toptagsupvotes
+//       WITH post, COLLECT(toptagsupvotes) AS tags
+//       RETURN post, tags
+//       ORDER BY post DESC
 
 
 
+
+// MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
+// OPTIONAL MATCH (c:Crosspost)-[]->(b)
+// WHERE NOT c.name =~ a.name
+//       WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes, c
+//       ORDER BY upvotes DESC 
+//       WITH post, collect([tag, upvotes, c.name])[0..3] AS toptags
+//       UNWIND toptags AS toptagsupvotes
+//         WITH post, COLLECT(toptagsupvotes) AS test
+//       RETURN post, test
+//       ORDER BY post DESC
+
+
+
+
+
+
+
+
+
+
+
+// MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
+//       WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes, b, a
+//       ORDER BY upvotes DESC 
+//       WITH post, collect([tag, upvotes])[0..3] AS toptags, b, a
+//       UNWIND toptags AS toptagsupvotes
+//         OPTIONAL MATCH (d:Crosspost)-[]->(b)<-[]-(a)
+//         WHERE toptagsupvotes[0] =~ b.tagname
+//         WITH post, COLLECT(d.name) AS test
+//         RETURN post, test
+//         ORDER BY post DESC
 
 
 function retrieveDatabase(results){

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8"></meta>
-
+<head>
 <link rel="stylesheet" href="css/index.css"></link>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
-<script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
-<head>
+<script type="text/javascript" src="https://d3js.org/d3.v5.js"></script>
+
 <title>Crossroads</title>
 </head>
 <body>
@@ -38,6 +38,34 @@
 	var socket = io();
 	socket.emit('retrieveDatabase');
 
+
+	function dragstarted(d) {
+	  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+	  d.fx = d.x;
+	  d.fy = d.y;
+	}
+
+	function dragged(d) {
+	  d.fx = d3.event.x;
+	  d.fy = d3.event.y;
+	}
+
+	function dragended(d) {
+	  if (!d3.event.active) simulation.alphaTarget(0);
+	  d.fx = null;
+	  d.fy = null;
+	}
+
+	function mousedownNode(d, i) {
+	  nodes.splice(i, 1);
+	  links = links.filter(function(l) {
+	    return l.source !== d && l.target !== d;
+	  });
+	  d3.event.stopPropagation();
+
+	  restart();
+	}
+
 	var canvas = document.getElementById('worldcanvas');
 	var context = canvas.getContext('2d');
 	var rect = {
@@ -58,81 +86,99 @@
 		});
 	}
 
+
 	function handleRetrievedDatabase(results){
 		var xpos = 345;
-		for(i=0; i<results.length; i++){
-			context.beginPath();
-			context.rect(xpos+i*xpos, 350, 200, 100);
-			context.fillStyle = '#FFFFFF'; 
-			context.fillStyle = 'rgba(225,225,225,0.5)';
-			context.closePath();
-			context.font = '40pt Kremlin Pro Web';
-			context.fillStyle = '#000000';
-			context.fillText(results[i]['post'], xpos+i*xpos, 415);
-			console.log(results[i]);
-			dbresults.nodes.push({id:results[i]['post']});
-			var k = i+1;
-			if(results[k] == undefined){
-				continue;
-			}
-			if(results[i]['tagname']==results[k]['tagname']){
-				dbresults.links.push({source:results[i]['post'], target:results[k]['post']});
-			}
-			
-		}
-		console.log(dbresults);
+		var k;
+		var promise1 = new Promise(function(resolve, reject){
+			for(i=0; i<results.length; i++){
+						context.beginPath();
+						context.rect(xpos+i*xpos, 350, 200, 100);
+						context.fillStyle = '#FFFFFF'; 
+						context.fillStyle = 'rgba(225,225,225,0.5)';
+						context.closePath();
+						context.font = '40pt Kremlin Pro Web';
+						context.fillStyle = '#000000';
+						context.fillText(results[i]['post'], xpos+i*xpos, 415);
+						//console.log(results[i]);
+						k = i+1;
+						dbresults.nodes.push({id:results[i]['post']});
+						for(tag of results[i]['tags']){
+							dbresults.nodes.push({id:tag[0]});
+							dbresults.links.push({source:results[i]['post'], target:tag[0]})
+						}
+						//if node doesn't exist in database, add it
+						// if (dbresults.nodes.indexOf({id:results[i]['post']}) <= -1){
+						// 	console.log(dbresults.nodes.indexOf({id:results[i]['post']}));
+						// 	dbresults.nodes.push({id:results[i]['post']});
+						// }
+						//if k is undefined, continue loop to prevent error from next expression
+						// if(results[k] == undefined){
+						// 	continue;
+						// }
+						// if(results[i]['tagname']==results[k]['tagname']){
+						// 	dbresults.links.push({source:results[i]['post'], target:results[k]['post']});
+						// }
+					}
+					localStorage.setItem("dbresults", JSON.stringify(dbresults));
+				console.log("test");
+				resolve(dbresults);
+		});
 
-			var svg = d3.select("svg"),
-	    width = +svg.attr("width"),
-	    height = +svg.attr("height");
+		//promise1.then(function(value){
+			//console.log(value);
+		var svg = d3.select("svg"),
+		    width = +svg.attr("width"),
+		    height = +svg.attr("height");
 
-	var simulation = d3.forceSimulation()
-	    .force("link", d3.forceLink().id(function(d) { return d.id; }))
-	    .force("charge", d3.forceManyBody())
-	    .force("center", d3.forceCenter(width/2 , height/2 ));
+		var simulation = d3.forceSimulation()
+		    .force("link", d3.forceLink().id(function(d) { return d.id; }))
+		    .force("charge", d3.forceManyBody())
+		    .force("center", d3.forceCenter(width/2 , height/2 ));
 
-	d3.json(dbresults)
-	  .then( function(graph) {
+			d3.json('dbresults3.json')
+			  .then( function(data) {
 
-	  var link = svg.append("g")
-	      .attr("class", "links")
-	    .selectAll("line")
-	    .data(graph.links)
-	    .enter().append("line");
+			  var link = svg.append("g")
+			      .attr("class", "links")
+			    .selectAll("line")
+			    .data(data.links)
+			    .enter().append("line");
 
-	  var node = svg.append("g")
-	      .attr("class", "nodes")
-	    .selectAll("circle")
-	    .data(graph.nodes)
-	    .enter().append("circle")
-	      .attr("r", 2.5)
-	      .call(d3.drag()
-	          .on("start", dragstarted)
-	          .on("drag", dragged)
-	          .on("end", dragended));
+			  var node = svg.append("g")
+			      .attr("class", "nodes")
+			    .selectAll("circle")
+			    .data(data.nodes)
+			    .enter().append("circle")
+			      .attr("r", 2.5)
+			      .call(d3.drag()
+			          .on("start", dragstarted)
+			          .on("drag", dragged)
+			          .on("end", dragended));
 
-	  node.append("title")
-	      .text(function(d) { return d.id; });
+			  node.append("title")
+			      .text(function(d) { return d.id; });
 
-	  simulation
-	      .nodes(graph.nodes)
-	      .on("tick", ticked);
+			  simulation
+			      .nodes(data.nodes)
+			      .on("tick", ticked);
 
-	  simulation.force("link")
-	      .links(graph.links);
+			  simulation.force("link")
+			      .links(data.links);
 
-	  function ticked() {
-	    link
-	        .attr("x1", function(d) { return d.source.x; })
-	        .attr("y1", function(d) { return d.source.y; })
-	        .attr("x2", function(d) { return d.target.x; })
-	        .attr("y2", function(d) { return d.target.y; });
+			  function ticked() {
+			    link
+			        .attr("x1", function(d) { return d.source.x; })
+			        .attr("y1", function(d) { return d.source.y; })
+			        .attr("x2", function(d) { return d.target.x; })
+			        .attr("y2", function(d) { return d.target.y; });
 
-	    node
-	        .attr("cx", function(d) { return d.x; })
-	        .attr("cy", function(d) { return d.y; });
-	  }
-	});
+			    node
+			        .attr("cx", function(d) { return d.x; })
+			        .attr("cy", function(d) { return d.y; });
+			  }
+			});
+		//});
 	}
 
 	socket.on('sendDatabase', function(results){
@@ -185,32 +231,6 @@
 
 
 
-	function dragstarted(d) {
-	  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-	  d.fx = d.x;
-	  d.fy = d.y;
-	}
-
-	function dragged(d) {
-	  d.fx = d3.event.x;
-	  d.fy = d3.event.y;
-	}
-
-	function dragended(d) {
-	  if (!d3.event.active) simulation.alphaTarget(0);
-	  d.fx = null;
-	  d.fy = null;
-	}
-
-	function mousedownNode(d, i) {
-	  nodes.splice(i, 1);
-	  links = links.filter(function(l) {
-	    return l.source !== d && l.target !== d;
-	  });
-	  d3.event.stopPropagation();
-
-	  restart();
-	}
 
 </script>
 
