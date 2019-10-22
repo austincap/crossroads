@@ -26,6 +26,12 @@
   stroke-width: 40px;
 }
 
+.cursor {
+  fill: none;
+  stroke: #aaa;
+  pointer-events: none;
+}
+
 #submitnew{
 	background-color: red;
 }
