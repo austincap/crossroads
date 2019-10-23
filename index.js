@@ -35,13 +35,12 @@ io.on('connection', function(socket){
     socket.on('retrieveDatabase', function(infoToAdd){
     	var query = `
       MATCH (a:Crosspost)-[t:TAGGED]->(b:Tag)
-      WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
-      ORDER BY upvotes DESC 
-      WITH post, COLLECT([tag, upvotes])[0..3] AS toptags
-      UNWIND toptags AS toptagsupvotes
-      WITH post, COLLECT(toptagsupvotes) AS tags
-      RETURN post, tags
-      ORDER BY post DESC
+            WITH a.name AS post, b.tagname AS tag, t.upvotes AS upvotes
+            ORDER BY upvotes DESC 
+            WITH post, COLLECT([tag, upvotes])[0..2] AS toptags
+            UNWIND toptags AS tags
+            RETURN post, tags
+            ORDER BY tags[0] DESC
     	`;
     	db.cypher({
     		query: query

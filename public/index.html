@@ -78,11 +78,51 @@
 						context.fillText(results[i]['post'], xpos+i*xpos, 415);
 						//console.log(results[i]);
 						k = i+1;
-						dbresults.nodes.push({id:results[i]['post'], group:7});
-						for(tag of results[i]['tags']){
-							dbresults.nodes.push({id:tag[0], group:1});
-							dbresults.links.push({source:results[i]['post'], target:tag[0]});
+						var foundPrev = false;
+						var thisPostData = results[i]['post'];
+						
+						for(obj of Object.values(dbresults.nodes)){
+							if(obj.id==thisPostData){
+								foundPrev=true;
+								thisPostData = obj.id;
+								break;
+							}
 						}
+						//console.log(dbresults.nodes.indexOf({id:results[i]['post']}));
+						if(foundPrev==false){
+							dbresults.nodes.push({id:results[i]['post'], group:7});
+						}
+						//if k is undefined, continue loop to prevent error from next expression
+						if(results[k] == undefined){
+							continue;
+						}else{
+							var thisNextPostData = results[k]['post'];
+							for(obj of Object.values(dbresults.nodes)){
+								if(obj.id==thisNextPostData){
+									foundPrev=true;
+									thisNextPostData = obj.id;
+									break;
+								}
+							}
+							console.log(results[i]['tags'][0][0]);
+							console.log(results[k]['tags'][0][0]);
+							console.log(results[i]['tags'][0][0]==results[k]['tags'][0][0]);
+							if(results[i]['tags'][0][0]==results[k]['tags'][0][0]){
+								dbresults.links.push({source:thisPostData, target:thisNextPostData});
+							}
+						}
+
+
+
+
+						// k = i+1;
+						// dbresults.nodes.push({id:results[i]['post'], group:7});
+						// for(tag of results[i]['tags']){
+						// 	dbresults.nodes.push({id:tag[0], group:1});
+						// 	dbresults.links.push({source:results[i]['post'], target:tag[0]});
+						// }
+
+
 						//if node doesn't exist in database, add it
 						// if (dbresults.nodes.indexOf({id:results[i]['post']}) <= -1){
 						// 	console.log(dbresults.nodes.indexOf({id:results[i]['post']}));
