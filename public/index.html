@@ -19,9 +19,6 @@
 
 <div id="previewframe"></div>
 
-<div id="worldframe">
-	<canvas id="worldcanvas"></canvas>
-</div>
 
 
 
@@ -42,15 +39,6 @@
 
 
 
-	var canvas = document.getElementById('worldcanvas');
-	var context = canvas.getContext('2d');
-	var rect = {
-		x:250,
-		y:350,
-		width:200,
-		height:100
-	};
-
 	var dbresults = {"nodes":[], "links":[]};
 
 	function sendNewPostToServer(){
@@ -64,18 +52,9 @@
 
 
 	function handleRetrievedDatabase(results){
-		var xpos = 345;
 		var k;
 		var promise1 = new Promise(function(resolve, reject){
 			for(i=0; i<results.length; i++){
-						context.beginPath();
-						context.rect(xpos+i*xpos, 350, 200, 100);
-						context.fillStyle = '#FFFFFF'; 
-						context.fillStyle = 'rgba(225,225,225,0.5)';
-						context.closePath();
-						context.font = '40pt Kremlin Pro Web';
-						context.fillStyle = '#000000';
-						context.fillText(results[i]['post'], xpos+i*xpos, 415);
 						//console.log(results[i]);
 						k = i+1;
 						var foundPrev = false;
@@ -104,11 +83,14 @@
 									break;
 								}
 							}
-							console.log(results[i]['tags'][0][0]);
-							console.log(results[k]['tags'][0][0]);
-							console.log(results[i]['tags'][0][0]==results[k]['tags'][0][0]);
+
+							// console.log(results[i]['tags'][0][0]);
+							// 							console.log(results[i]['tags'][0]);
+
+							// console.log(results[k]['tags'][0][0]);
+							// console.log(results[i]['tags'][0][0]==results[k]['tags'][0][0]);
 							if(results[i]['tags'][0][0]==results[k]['tags'][0][0]){
-								dbresults.links.push({source:thisPostData, target:thisNextPostData});
+								dbresults.links.push({source:thisPostData, target:thisNextPostData, tag:results[i]['tags'][0]});
 							}
 						}
 
@@ -145,77 +127,116 @@
 
 			console.log(data);
 			
-			// var svg = d3.select("svg"),
-			//     width = +svg.attr("width"),
-			//     height = +svg.attr("height");
-
-
 
 			var svg = d3.select("svg")
 			    .attr("width", 900)
 			    .attr("height", 900)
-			    .on("mousemove", mousemove)
-   				.on("mousedown", mousedownCanvas);
+			    .on("mousemove", mousemove);
+   				//.on("mousedown", mousedownCanvas);
 
 			var simulation = d3.forceSimulation()
-				.force("collision", d3.forceCollide().radius(50))
+				.force("collision", d3.forceCollide().radius(70))
 			    .force("link", d3.forceLink().id(function(d) { return d.id; }))
-			    .force("charge", d3.forceManyBody().strength(10).distanceMin(10))
+			    .force("charge", d3.forceManyBody().strength(100).distanceMin(30))
 			    .force("center", d3.forceCenter(900/2 , 900/2 ));
 
 
-			  var link = svg.append("g")
-			    .attr("class", "links")
-			    .selectAll("line")
-			    .data(data.links)
-			    .enter().append("line");
+			// var link = svg.append("g")
+			//     .attr("class", "links")
+			//     .selectAll("line")
+			//     .data(data.links)
+			//     .enter()
+			//     .append("line");
 
-			  var node = svg.append("g")
+        // Draw lines for Links between Nodes
+        var link = svg.selectAll(".gLink")
+            .data(data.links)
+          .enter().append("g")
+            .attr("class", "gLink")
+          .append("line")
+            .attr("class", "links")
+            .style("stroke", "#ccc")
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+
+
+			var node = svg.append("g")
 			    .attr("class", "nodes")
 			    .selectAll("circle")
 			    .data(data.nodes)
-			    .enter().append("circle")
+			    .enter()
+			    .append("circle")
 			      .attr("r", function(d){ return d.group;})
-			      .on("mousedown", mousedownNode)
+			      .on("mousedown", clickOnNode)
 			      .call(d3.drag()
 			          .on("start", dragstarted)
 			          .on("drag", dragged)
 			          .on("end", dragended));
 
+			var myText = svg.selectAll(".mytext")
+				.data(data.nodes)
+				.enter()
+				.append("text")
+				.on("mousedown", clickOnNode);
 
 
-			  var myText = svg.selectAll(".mytext")
-						.data(data.nodes)
-						.enter()
-						.append("text")
-						.on("mousedown", mousedownNode);
+			// node.append("title")
+			//       .text(function(d) { console.log("PENIS"); return d.id; });
 
-			  node.append("title")
-			      .text(function(d) { return d.id; });
+			myText.style("fill", "#0000ff")
+				.attr("width", "10")
+			    .attr("height", "10")
+			    .text(function(d) { return d.id; });
 
-			  myText.style("fill", "#0000ff")
-				 .attr("width", "10")
-			     .attr("height", "10")
-			     .text(function(d) { return d.id; });
+			var cursor = svg.append("circle")
+			    .attr("r", 30)
+			    .attr("transform", "translate(-100,-100)")
+			    .attr("class", "cursor");
 
+			simulation
+			    .nodes(data.nodes)
+			    .on("tick", ticked);
 
-
-				var cursor = svg.append("circle")
-				    .attr("r", 30)
-				    .attr("transform", "translate(-100,-100)")
-				    .attr("class", "cursor");
-				function mousemove() {
-				  cursor.attr("transform", "translate(" + String(d3.mouse(this)) + ")");
-				}
-
-			  simulation
-			      .nodes(data.nodes)
-			      .on("tick", ticked);
-
-			  simulation.force("link")
+			simulation.force("link")
 			      .links(data.links);
 
-			  function ticked(){
+
+			// var path = svg
+			//     .append("g")
+			//     .selectAll("path")
+			//     .data(data.links)
+			//     .enter()
+			//     .append("path")
+			//     .attr("class", function(d) { return "linkpath"; })
+			//     .attr("id", function(d,i) { return "linkId_" + i; })
+			//     .attr("marker-end", function(d) { return "url(#" + d.tag + ")"; });
+
+		    // Append text to Link edges
+	        var linkText = svg.selectAll(".gLink")
+		        .data(data.links)
+		        .append("text")
+			    .attr("font-family", "Arial, Helvetica, sans-serif")
+			    .attr("x", function(d) {
+			        if (d.target.x > d.source.x) { return (d.source.x + (d.target.x - d.source.x)/2); }
+			        else { return (d.target.x + (d.source.x - d.target.x)/2); }
+			    })
+		        .attr("y", function(d) {
+			        if (d.target.y > d.source.y) { return (d.source.y + (d.target.y - d.source.y)/2); }
+			        else { return (d.target.y + (d.source.y - d.target.y)/2); }
+			    })
+			    .attr("fill", "#333333")
+		            .style("font", "normal 12px Arial")
+		            .attr("dy", ".35em")
+		            .text(function(d) { console.log(d);return d.tag; });
+
+	
+			function mousemove() {
+			  cursor.attr("transform", "translate(" + String(d3.mouse(this)) + ")");
+			}
+
+			function ticked(){
 			    link
 			        .attr("x1", function(d) { return d.source.x; })
 			        .attr("y1", function(d) { return d.source.y; })
@@ -228,7 +249,17 @@
 
 			    myText.attr("x", function(d) { return d.x; })
         			.attr("y", function(d) { return d.y; });
-			  }
+
+			    linkText
+				    .attr("x", function(d) {
+				        if (d.target.x > d.source.x) { return (d.source.x + (d.target.x - d.source.x)/2); }
+				        else { return (d.target.x + (d.source.x - d.target.x)/2); }
+				    })
+				    .attr("y", function(d) {
+				        if (d.target.y > d.source.y) { return (d.source.y + (d.target.y - d.source.y)/2); }
+				        else { return (d.target.y + (d.source.y - d.target.y)/2); }
+				    });    			
+			}
 
 
 
@@ -250,7 +281,7 @@
 			}
 
 			function mousedownNode(d, i) {
-				window.alert(d.id);
+				//window.alert(d.id);
 			  data.nodes.splice(i, 1);
 			  data.links = data.links.filter(function(l) {
 			    return l.source !== d && l.target !== d;
@@ -258,6 +289,11 @@
 			  d3.event.stopPropagation();
 
 			  restart();
+			}
+
+
+			function clickOnNode(d, i) {
+				//window.alert(d.id);
 			}
 
 
@@ -311,47 +347,7 @@
 		handleRetrievedDatabase(results);
 	});
 
-	function getMousePos(canvas, event) {
-		var rect = canvas.getBoundingClientRect();
-		return {
-			x: event.clientX - rect.left,
-			y: event.clientY - rect.top
-		};
-	}
-	function isInside(pos, rect){
-		return pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y
-	}
 
-
-
-	function drawCircle(result){
-
-	}
-	context.beginPath();
-	context.rect(250, 350, 200, 100); 
-	context.fillStyle = '#FFFFFF'; 
-	context.fillStyle = 'rgba(225,225,225,0.5)';
-	context.fillRect(25,72,32,32);
-	context.fill(); 
-	context.lineWidth = 2;
-	context.strokeStyle = '#000000'; 
-	context.stroke();
-	context.closePath();
-	context.font = '40pt Kremlin Pro Web';
-	context.fillStyle = '#000000';
-	context.fillText('Start', 345, 415);
-
-
-	canvas.addEventListener('click', function(evt) {
-		var mousePos = getMousePos(canvas, evt);
-	    //debugger;
-		if (isInside(mousePos,rect)) {
-			context.fillStyle = '#CEFCE3';
-			alert('clicked inside rect');
-	    }else{
-	        alert('clicked outside rect');
-	    }	
-	}, false);
 
 
 
