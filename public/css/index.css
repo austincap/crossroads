@@ -5,12 +5,46 @@
 	overflow: scroll;
 }
 
+#previewframe{
+	display: none;
+	position: absolute;
+	max-height: 600px;
+	max-width: 600px;
+	min-width: 600px;
+	min-height: 600px;
+	background-color: rgba(90, 90, 90, 0.3);
+	margin: -500px 10px 20px 30px;
+}
+
+#closeWindow {
+	position: relative;
+	margin-right: 10px;
+	margin-top: 10px;
+}
+
+#upvoteModal {
+	display:none;
+	position:absolute;
+	max-height: 100px;
+	max-width: 100px;
+	min-width: 100px;
+	min-height: 100px;
+	background-color: rgba(90, 90, 90, 0.2);
+	margin: -500px 10px 20px 30px;
+}
+
 .links line {
   stroke: #aaa;
 }
 
 .gLink {
 	stroke: #aaa;
+}
+
+path.linkpath {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1px;
 }
 
 .nodes circle {
@@ -23,6 +57,15 @@
   fill: none;
   stroke: #aaa;
   pointer-events: none;
+}
+
+
+#tag2 {
+	display:none;
+}
+
+#tag3 {
+	display:none;
 }
 
 #submitnew{
