@@ -1,7 +1,8 @@
 
 #d3frame{
-	max-width: 700px;
+	max-width: 1000px;
 	max-height: 500px;
+
 	overflow: scroll;
 }
 
@@ -61,7 +62,7 @@ path.linkpath {
 
 
 #tag2 {
-	display:none;
+	display:block;
 }
 
 #tag3 {
@@ -74,4 +75,5 @@ path.linkpath {
 
 #adjacentblocks{
 	display: inline-block;
+	width:100%;
 }

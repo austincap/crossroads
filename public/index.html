@@ -2,9 +2,9 @@
 <meta charset="utf-8"></meta>
 <head>
 <link rel="stylesheet" href="css/index.css"></link>
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"
-			  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-			  crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="linkify.min.js"></script>
+<script src="linkify-jquery.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
 <script type="text/javascript" src="https://d3js.org/d3.v5.js"></script>
 <!-- <script src="linkify.js"></script>
@@ -19,8 +19,8 @@
 
 <div id="adjacentblocks">
 
-<div id="d3frame">
-	<svg width="1000" height="700"></svg>
+<div id="d3frame" min-width="1000px">
+	<svg ></svg>
 </div>
 
 <div id="previewframe">
@@ -45,11 +45,10 @@
 <input type="text" id="nodename" class="submissionslot" placeholder="post title goes here"></input>
 <input type="text" id="userInputtedContent" class="submissionslot" placeholder="link goes here"></input>
 <br/>
-<input type="text" id="tag1" class="submissionslot" ></input><br/>
-<input type="text" id="tag2" class="submissionslot" placeholder="tag2"></input><br/>
-<input type="text" id="tag3" class="submissionslot" placeholder="tag3"></input><br/>
-<button id="addTagForUpload" onclick="showAdditionalTagInput()">Add Tag</button>
-<button id="upload" onclick="sendNewPostToServer()" disabled="disabled">Upload</button>
+<input type="text" id="tag1" class="submissionslot" placeholder="tag1 (must fill!)"></input><br/>
+<input type="text" id="tag2" placeholder="tag2"></input><br/>
+<!-- <button id="addTagForUpload" onclick="showAdditionalTagInput()">Add Tag</button>
+ --><button id="upload" onclick="sendNewPostToServer()" disabled="disabled">Upload</button>
 </div>
 
 </div>
@@ -81,24 +80,30 @@
 
 
 	function sendNewPostToServer(){
-		socket.emit('sendNewPostToServer', {
-			nodename: document.getElementById('nodename').value,
-			tag1: document.getElementById('tag1').value,
-			tag2: document.getElementById('tag2').value,
-			tag3: document.getElementById('tag3').value
-		});
-	}
-
-
-	function showAdditionalTagInput(){
-		if(window.getComputedStyle(document.getElementById("tag2")).display=="none"){
-			document.getElementById("tag2").style.display="block";
-		}else if(window.getComputedStyle(document.getElementById("tag3")).display=="none"){
-			document.getElementById("tag3").style.display="block";
-		}else if(window.getComputedStyle(document.getElementById("tag3")).display=="none"){
-
+		if(document.getElementById('tag2').value==""){
+			socket.emit('sendNewPostToServer1', {
+				nodename: document.getElementById('nodename').value,
+				nodecontent: document.getElementById('userInputtedContent').value,
+				tag1: document.getElementById('tag1').value.toLowerCase()
+			});
+		}else{
+			socket.emit('sendNewPostToServer2', {
+				nodename: document.getElementById('nodename').value,
+				nodecontent: document.getElementById('userInputtedContent').value,
+				tag1: document.getElementById('tag1').value.toLowerCase(),
+				tag2: document.getElementById('tag2').value.toLowerCase()
+			});			
 		}
 	}
+
+
+	// function showAdditionalTagInput(){
+	// 	if(window.getComputedStyle(document.getElementById("tag2")).display=="none"){
+	// 		document.getElementById("tag2").style.display="block";
+	// 	}else if(window.getComputedStyle(document.getElementById("tag3")).display=="none"){
+	// 		document.getElementById("tag3").style.display="block";
+	// 	}
+	// }
 
 	var inputs = $(".submissionslot");
 
@@ -116,7 +121,6 @@
 
 
 	inputs.change(function() {
-		console.log('test');
 	  if (validateInputs(inputs)) {
 	    document.getElementById("upload").removeAttribute("disabled");
 	  }
@@ -170,12 +174,6 @@
 									break;
 								}
 							}
-
-							// console.log(results[i]['tags'][0][0]);
-							// 							console.log(results[i]['tags'][0]);
-
-							// console.log(results[k]['tags'][0][0]);
-							// console.log(results[i]['tags'][0][0]==results[k]['tags'][0][0]);
 							if(results[i]['tags'][0][0]==results[k]['tags'][0][0]){
 								dbresults.links.push({source:thisPostData, target:thisNextPostData, tag:results[i]['tags'][0]});
 							}
@@ -191,16 +189,16 @@
 			console.log(data);
 			
 			var svg = d3.select("svg")
-			    .attr("width", 900)
-			    .attr("height", 900)
+			    .attr("width", 2000)
+			    .attr("height", 2000)
 			    .on("mousemove", mousemove);
    				//.on("mousedown", mousedownCanvas);
 
 			var simulation = d3.forceSimulation()
 				.force("collision", d3.forceCollide().radius(70))
 			    .force("link", d3.forceLink().id(function(d) { return d.id; }))
-			    .force("charge", d3.forceManyBody().strength(100).distanceMin(30))
-			    .force("center", d3.forceCenter(900/2 , 900/2 ));
+			    .force("charge", d3.forceManyBody().strength(1000).distanceMin(30))
+			    .force("center", d3.forceCenter(700 , 700));
 
 			var node = svg.append("g")
 			    .attr("class", "nodes")

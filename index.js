@@ -11,26 +11,84 @@ app.use(express.static('public'));
 
 
 io.on('connection', function(socket){
-	socket.on('sendNewPostToServer', function(infoToAdd){
+
+	socket.on('sendNewPostToServer1', function(infoToAdd){
       var query = `
-      MERGE (n:Crosspost {name:{nodename}})
-      MERGE (t1:Tag {name:{tag1}}), (t2:Tag {name:{tag2}}), (t3:Tag {name:{tag3}})
-      MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
-      MERGE (n)-[:TAGGED {upvotes:1}]->(t3)
+      MERGE (n:Crosspost {name:{nodename}, content:{nodecontent}, upvotes:1})
+      MERGE (t1:Tag {tagname:{tag1}})
+      MERGE (n)-[:TAGGED {upvotes:1}]->(t1)
       `;
       db.cypher({
         query: query,
         params: {
           nodename: infoToAdd.nodename,
-          tag1: infoToAdd.tag1,
-          tag2: infoToAdd.tag2,
-          tag3: infoToAdd.tag3
+          nodecontent: infoToAdd.nodecontent,
+          tag1: infoToAdd.tag1
         }
       }, function(err, results){
         if(err){console.error('Error in BlockService createBlock label', err);}
-        callback(null, results);
       });
-    }); 
+  });
+
+  socket.on('sendNewPostToServer2', function(infoToAdd){
+      var query = `
+      MERGE (n:Crosspost {name:{nodename}, content:{nodecontent}, upvotes:1})
+      MERGE (t1:Tag {tagname:{tag1}})
+      MERGE (t2:Tag {tagname:{tag2}})
+      MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
+      `;
+      db.cypher({
+        query: query,
+        params: {
+          nodename: infoToAdd.nodename,
+          nodecontent: infoToAdd.nodecontent,
+          tag1: infoToAdd.tag1,
+          tag2: infoToAdd.tag2
+        }
+      }, function(err, results){
+        if(err){console.error('Error in BlockService createBlock label', err);}
+      });
+  }); 
+
+  // socket.on('upvoteTag', function(infoToChange){
+  //     var query = `
+  //     MERGE (n:Crosspost {name:{nodename}, content:{nodecontent}, upvotes:1})
+  //     MERGE (t1:Tag {name:{tag1}}), (t2:Tag {name:{tag2}}))
+  //     MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
+  //     `;
+  //     db.cypher({
+  //       query: query,
+  //       params: {
+  //         nodename: infoToChange.nodename,
+  //         nodecontent: infoToChange.nodecontent,
+  //         tag1: infoToChange.tag1,
+  //         tag2: infoToChange.tag2
+  //       }
+  //     }, function(err, results){
+  //       if(err){console.error('Error in BlockService createBlock label', err);}
+  //       callback(null, results);
+  //     });
+  //   }); 
+
+  // socket.on('upvotePost', function(infoToChange){
+  //     var query = `
+  //     MERGE (n:Crosspost {name:{nodename}, content:{nodecontent}, upvotes:1})
+  //     MERGE (t1:Tag {name:{tag1}}), (t2:Tag {name:{tag2}}))
+  //     MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
+  //     `;
+  //     db.cypher({
+  //       query: query,
+  //       params: {
+  //         nodename: infoToChange.nodename,
+  //         nodecontent: infoToChange.nodecontent,
+  //         tag1: infoToChange.tag1,
+  //         tag2: infoToChange.tag2
+  //       }
+  //     }, function(err, results){
+  //       if(err){console.error('Error in BlockService createBlock label', err);}
+  //       callback(null, results);
+  //     });
+  //   }); 
 
     socket.on('retrieveDatabase', function(infoToAdd){
     	var query = `
@@ -49,6 +107,7 @@ io.on('connection', function(socket){
 	        socket.emit('sendDatabase', results);
     	});
     });
+
 });
 
 
