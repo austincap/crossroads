@@ -120,7 +120,7 @@
 		var last3chars = document.getElementById('userInputtedContent').value.slice(-3);
 		var typeOfUpload = "text";
 		if(last3chars=="jpg"||last3chars=="png"||last3chars=="gif"){
-			typeOfUpload = "pic"
+			typeOfUpload = "pic";
 		}
 		if(document.getElementById('tag2').value==""){
 			socket.emit('sendNewPostToServer1', {
