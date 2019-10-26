@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<meta charset="utf-8"></meta>
+<meta charset="utf-8"/>
+<meta itemprop="name" content="Test website">
+<meta itemprop="description" content="This is the website description. Nice eh?">
+<meta itemprop="image" content="https://lorempixel.com/400/200/">
+<meta property="og:title" content="Crossroads"/>
+<meta property="og:description" content="Crossroads - Intersectional Shitposting"/>
+<meta property="og:url" content="http://memewar.io"/>
 <head>
 <link rel="stylesheet" href="css/index.css"></link>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
@@ -15,17 +21,17 @@
 </head>
 <body>
 
-<span id="titlespan">Crossroads</span><span> | Status: </span><span id="statusUpdate"></span>
+<div id="titleDiv"><span id="titlespan">Status: </span><marquee behavior="slide" direction="left" scrollamount="20" id="statusbar">Welcome to Crossroads!</marquee></div>
 
 <div id="adjacentblocks">
 
 <div id="previewframe">
 <div id="previewframeTopSpace"></div>
 <div id="postNameInModalPostOnly"></div>
-<button id="upvote" onclick="upvotePost()">Love it</button>
-<button id="downvote">Hate it</button>
+<button id="upvote" onclick="upvotePost()">Upvote it</button>
+<!-- <button id="downvote">Hate it</button> -->
 <button id="tagIt" onclick="tagPost()">Tag it</button>
-<button id="closeWindow" onclick="closePreviewFrame()">Close</button>
+<button id="closeWindow" onclick="closeAllFrames();document.getElementById('uploadNewPostButton').innerHTML='+';clickOnAddNewPost=false;">Close</button>
 
 <div class="autocomplete" style="width:300px;">
 <input type="text" id="newTagInput" maxlength="20" placeholder="enter your tag (autolowercase)"></input>
@@ -36,7 +42,7 @@
 </div>
 
 <div id="d3frame" min-width="1000px">
-	<button id="uploadNewPostButton" onclick="document.getElementById('submitnew').style.display='block';">+</button>
+	<button id="uploadNewPostButton" onclick="clickNewPostButton()">+</button>
 	<svg ></svg>
 </div>
 
@@ -46,7 +52,7 @@
 <div id="contentInModal"></div>
 <hr/>
 <button id="upvoteTag" onclick="upvoteTag()">Upvote tag?</button>
-<button class="closeWindow" onclick="document.getElementById('upvoteTagModal').style.display='none';">Close</button>
+<button class="closeWindow" onclick="closeAllFrames();document.getElementById('uploadNewPostButton').innerHTML='+';clickOnAddNewPost=false;">Close</button>
 </div>
 
 
@@ -67,6 +73,7 @@
 	var mouseCoordinates = [0, 0];
 	var selectedNode = null;
 	var clickOnAddNewTag = false;
+	var clickOnAddNewPost = false;
 	
 	var existingTagArray = [];
 
@@ -91,23 +98,56 @@
 	  validate: true
 	};
 
+	function clickNewPostButton(){
+		closeAllFrames();
+		if(clickOnAddNewPost==false){
+			document.getElementById('submitnew').style.display="block";
+			document.getElementById('uploadNewPostButton').innerHTML="-";
+			clickOnAddNewPost=true; 
+			
+		}else{
+			document.getElementById('uploadNewPostButton').innerHTML="+";
+			clickOnAddNewPost=false;
+		}
+	}
+
+	function displayStatus(message){
+		  document.getElementById("statusbar").outerHTML = '<marquee behavior="slide" direction="left" scrollamount="20" id="statusbar">'+message+'</marquee>';
+		//document.getElementById('statusbar').innerHTML = message;
+	}
 
 	function sendNewPostToServer(){
+		var last3chars = document.getElementById('userInputtedContent').value.slice(-3);
+		var typeOfUpload = "text";
+		if(last3chars=="jpg"||last3chars=="png"||last3chars=="gif"){
+			typeOfUpload = "pic"
+		}
 		if(document.getElementById('tag2').value==""){
 			socket.emit('sendNewPostToServer1', {
 				nodename: document.getElementById('nodename').value,
 				nodecontent: document.getElementById('userInputtedContent').value,
-				tag1: document.getElementById('tag1').value.toLowerCase()
+				tag1: document.getElementById('tag1').value.toLowerCase(),
+				type: typeOfUpload
 			});
 		}else{
 			socket.emit('sendNewPostToServer2', {
 				nodename: document.getElementById('nodename').value,
 				nodecontent: document.getElementById('userInputtedContent').value,
 				tag1: document.getElementById('tag1').value.toLowerCase(),
-				tag2: document.getElementById('tag2').value.toLowerCase()
+				tag2: document.getElementById('tag2').value.toLowerCase(),
+				type: typeOfUpload
 			});			
 		}
-		location.reload();
+		closeAllFrames();			
+		document.getElementById('uploadNewPostButton').innerHTML="+";
+		clickOnAddNewPost=false;
+		displayStatus("Post uploaded successfully");
+		$("svg").empty();
+		document.getElementById('nodename').value="";
+		document.getElementById('userInputtedContent').value="";
+		document.getElementById('tag1').value="";
+		document.getElementById('tag2').value="";
+		socket.emit('retrieveDatabase');
 	}
 
 	function upvoteTag(){
@@ -117,6 +157,7 @@
 			tag1: document.getElementById('tagNameInModal').innerHTML
 		});
 		document.getElementById('upvoteTagModal').style.display = "none";
+		displayStatus("Tag successfully upvoted");
 	}
 
 	function upvotePost(){
@@ -125,6 +166,7 @@
 			nodecontent: document.getElementById('contentInModal').innerHTML
 		});
 		document.getElementById('previewframe').style.display = "none";
+		displayStatus("Post successfully upvoted");
 	}
 
 	function tagPost(){
@@ -135,13 +177,15 @@
 					nodename: document.getElementById('postNameInModalPostOnly').innerHTML,
 					nodecontent: document.getElementById('contentInModal').innerHTML,
 					newtag:	newTagInput.value.toLowerCase()	
-				});				
+				});
+				displayStatus("Tag added to post");
 			}else{
 				socket.emit('upvoteTag', {
 					nodename: document.getElementById('postNameInModalPostOnly').innerHTML,
 					nodecontent: document.getElementById('contentInModal').innerHTML,
 					tag1: newTagInput.value.toLowerCase()
 				});
+				displayStatus("Tag already existed for this post and was upvoted");
 			}
 			newTagInput.value = "";
 			newTagInput.style.display = "none";
@@ -153,24 +197,20 @@
 			document.getElementById("tagIt").innerHTML = "Submit tag?";
 			clickOnAddNewTag=true;
 		}
+		clickOnAddNewPost=false; 
+		document.getElementById('uploadNewPostButton').innerHTML="+";
 	}
 
-	function closePreviewFrame(){
+	function closeAllFrames(){
 		var newTagInput = document.getElementById("newTagInput");
 		newTagInput.value = "";
 		newTagInput.style.display = "none";
-		document.getElementById("previewframe").style.display="none";
 		clickOnAddNewTag=false;
 		document.getElementById("tagIt").innerHTML="Tag it";
+		document.getElementById("submitnew").style.display = "none";
+		document.getElementById('previewframe').style.display = "none";
+		document.getElementById('upvoteTagModal').style.display = "none";
 	}
-
-	// function showAdditionalTagInput(){
-	// 	if(window.getComputedStyle(document.getElementById("tag2")).display=="none"){
-	// 		document.getElementById("tag2").style.display="block";
-	// 	}else if(window.getComputedStyle(document.getElementById("tag3")).display=="none"){
-	// 		document.getElementById("tag3").style.display="block";
-	// 	}
-	// }
 
 	var inputs = $(".submissionslot");
 
@@ -265,6 +305,31 @@
 			    .force("charge", d3.forceManyBody().strength(1000).distanceMin(30))
 			    .force("center", d3.forceCenter(700 , 700));
 
+			var path = svg.append("g")
+			    .selectAll("path")
+			    .data(data.links)
+			    .enter()
+			    .append("path")
+			    .attr("class", "linkpath")
+			    .attr("id", function(d,i) { return "linkId_" + i; })
+			    .attr("marker-end", function(d) { return "url(#" + d.tag + ")"; });
+
+		    var linktext = svg.append("g").selectAll(".gLink").data(data.links);
+			
+			linktext.enter().append("g").attr("class", "gLink")
+			     .append("text")
+			     .attr("class", "gLink")
+			     .style("font-size", "11px")
+			     .style("font-family", "sans-serif")
+			     .attr("x", "50")
+			     .attr("y", "-4")
+			     .attr("text-anchor", "start")
+			     .style("fill", "#f1d141")
+			     .append("textPath")
+			     .attr("xlink:href",function(d,i){ return "#linkId_" + i; })
+			     .text(function(d){ return d.tag; })
+			     .on("mousedown", clickOnTag);
+
 			var node = svg.append("g")
 			    .attr("class", "nodes")
 			    .selectAll("circle")
@@ -272,6 +337,7 @@
 			    .enter()
 			    .append("circle")
 			      .attr("r", function(d){ return 5*d.upvotes;})
+			      .attr("color", "#111111")
 			      .on("mousedown", clickOnNode)
 			      .call(d3.drag()
 			          .on("start", dragstarted)
@@ -290,41 +356,38 @@
 			    .style("fill","#ffd24d")
 			    .text(function(d) { return text_truncate(d.id, 16); });
 
-			var cursor = svg.append("circle")
-			    .attr("r", 30)
-			    .attr("transform", "translate(-100,-100)")
-			    .attr("class", "cursor");
+			// var cursor = svg.append("circle")
+			//     .attr("r", 30)
+			//     .attr("transform", "translate(-100,-100)")
+			//     .attr("class", "cursor");
 
 			simulation.nodes(data.nodes).on("tick", ticked);
 			simulation.force("link").links(data.links);
 
-			var path = svg.append("g")
-			    .selectAll("path")
-			    .data(data.links)
-			    .enter()
-			    .append("path")
-			    .attr("class", "linkpath")
-			    .attr("id", function(d,i) { return "linkId_" + i; })
-			    .attr("marker-end", function(d) { return "url(#" + d.tag + ")"; });
 
-		    var linktext = svg.append("g").selectAll(".gLink").data(data.links);
-			     linktext.enter().append("g").attr("class", "gLink")
-			     .append("text")
-			     .attr("class", "gLink")
-			     .style("font-size", "13px")
-			     .attr("x", "50")
-			     .attr("y", "-4")
-			     .attr("text-anchor", "start")
-			     .style("fill","#ffd24d")
-			     .append("textPath")
-			     .attr("xlink:href",function(d,i){ return "#linkId_" + i; })
-			     .text(function(d){ return d.tag; })
-			     .on("mousedown", clickOnTag);
+
+			var imageElement = svg.append("g").selectAll(".image").data(data.nodes);
 
 			function mousemove(){
 				mouseCoordinates = d3.mouse(this);
-				cursor.attr("transform", "translate(" + String(d3.mouse(this)) + ")");
+				//cursor.attr("transform", "translate(" + String(d3.mouse(this)) + ")");
 			}
+
+        function mouseoverNode(d, i) {
+	        var thisObject = d3.select(this)["_groups"][0][0];
+	        d3.select(node.nodes()[i])
+	        .transition()
+		    .attr("r", 2*thisObject["attributes"][0]["nodeValue"] )
+		    .duration(500);
+        }
+
+        function mouseoutNode(d, i) {
+	        var thisObject = d3.select(this)["_groups"][0][0];
+	        d3.select(node.nodes()[i])
+	        .transition()
+		    .attr("r", thisObject["attributes"][0]["nodeValue"]/2 )
+		    .duration(500);
+        }
 
 			function ticked(){
 			    node
@@ -341,50 +404,30 @@
 				});
 			}
 
-			// function mousedownCanvas(){
-			//   var point = d3.mouse(this),
-			//       node = {x: point[0], y: point[1]},
-			//       n = data.nodes.push(node);
-
-			//   // add links to any nearby nodes
-			//   data.nodes.forEach(function(target) {
-			//     var x = target.x - node.x,
-			//         y = target.y - node.y;
-			//     if (Math.sqrt(x * x + y * y) < 30) {
-			//       data.links.push({source: node, target: target});
-			//     }
-			//   });
-
-			//   restart();
-			// }
-
-			// function mousedownNode(d, i){
-			// 	data.nodes.splice(i, 1);
-			// 	data.links = data.links.filter(function(l){ return l.source !== d && l.target !== d; });
-			// 	d3.event.stopPropagation();
-			// 	restart();
-			// }
-
 			function clickOnTag(d, i){
-				console.log(d);
+				//console.log(d);
+				closeAllFrames();
+				document.getElementById('uploadNewPostButton').innerHTML="-";
+				clickOnAddNewPost=true; 
 				var upvoteModalElement = document.getElementById('upvoteTagModal').style;
 				document.getElementById('tagNameInModal').innerHTML = d.tag;
 				document.getElementById('contentInModal').innerHTML = d.source.content;
 				document.getElementById('postNameInModal').innerHTML = d.source.id;
-				upvoteModalElement.left = String(mouseCoordinates[0])+"px";
-				upvoteModalElement.top = String(mouseCoordinates[1])+"px";
+				//upvoteModalElement.left = String(mouseCoordinates[0])+"px";
+				//upvoteModalElement.top = String(mouseCoordinates[1])+"px";
 				upvoteModalElement.display = "block";
 			}
 
 			function clickOnNode(d, i){
 				//previewFrame.innerHTML = linkifyHtml(d.content, linkifyOptions);
 				//linkifyStr(previewFrame, linkifyOptions);
-				console.log(d);
+				closeAllFrames();
+				clickOnAddNewPost=true;
+				document.getElementById('uploadNewPostButton').innerHTML="-";
 				document.getElementById('postNameInModalPostOnly').innerHTML = d.id;
 				document.getElementById('contentInModal').innerHTML = d.content;
 				previewContent.innerHTML = "<a href="+d.content+">"+d.content+"</a>";
 				document.getElementById('previewframe').style.display = "block";
-				//window.alert(d.content);
 			}
 
 			function restart(){
@@ -527,10 +570,10 @@
 	    }
 	  }
 	}
-	/*execute a function when someone clicks in the document:*/
-	document.addEventListener("click", function (e) {
-	    closeAllLists(e.target);
-	});
+		/*execute a function when someone clicks in the document:*/
+		document.addEventListener("click", function (e) {
+		    closeAllLists(e.target);
+		});
 	}
 
 	autocomplete(document.getElementById("newTagInput"), existingTagArray);
