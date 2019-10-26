@@ -48,47 +48,65 @@ io.on('connection', function(socket){
       }, function(err, results){
         if(err){console.error('Error in BlockService createBlock label', err);}
       });
+  });
+
+  socket.on('tagPost', function(infoToChange){
+      var query = `
+      MATCH (n:Crosspost {name:{nodename}, content:{nodecontent}})
+      MERGE (t1:Tag {tagname:{newtag}})
+      MERGE (n)-[t:TAGGED {upvotes:1}]->(t1)
+      RETURN n
+      `;
+      db.cypher({
+        query: query,
+        params: {
+          nodename: infoToChange.nodename,
+          nodecontent: infoToChange.nodecontent,
+          newtag: infoToChange.newtag
+        }
+      }, function(err, results){
+        if(err){console.error('Error upvoting tag', err);}
+        console.log(infoToChange.newtag+" added to "+infoToChange.nodename);
+      });
+    }); 
+
+
+  socket.on('upvoteTag', function(infoToChange){
+      var query = `
+      MATCH (n:Crosspost {name:{nodename}, content:{nodecontent}})-[t:TAGGED]->(t1:Tag {tagname:{tag1}})
+      SET t.upvotes=t.upvotes+1
+      RETURN t.upvotes
+      `;
+      db.cypher({
+        query: query,
+        params: {
+          nodename: infoToChange.nodename,
+          nodecontent: infoToChange.nodecontent,
+          tag1: infoToChange.tag1
+        }
+      }, function(err, results){
+        if(err){console.error('Error upvoting tag', err);}
+        console.log(infoToChange.nodename+" to "+infoToChange.tag1+" upvoted");
+      });
+    }); 
+
+  socket.on('upvotePost', function(infoToChange){
+      var query = `
+      MATCH (n:Crosspost {name:{nodename}, content:{nodecontent}})
+      SET n.upvotes=n.upvotes+1
+      RETURN n.upvotes
+      `;
+      db.cypher({
+        query: query,
+        params: {
+          nodename: infoToChange.nodename,
+          nodecontent: infoToChange.nodecontent
+        }
+      }, function(err, results){
+        if(err){console.error('Error upvoting post', err);}
+        console.log(infoToChange.nodename+" upvoted");
+      });
   }); 
-
-  // socket.on('upvoteTag', function(infoToChange){
-  //     var query = `
-  //     MERGE (n:Crosspost {name:{nodename}, content:{nodecontent}, upvotes:1})
-  //     MERGE (t1:Tag {name:{tag1}}), (t2:Tag {name:{tag2}}))
-  //     MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
-  //     `;
-  //     db.cypher({
-  //       query: query,
-  //       params: {
-  //         nodename: infoToChange.nodename,
-  //         nodecontent: infoToChange.nodecontent,
-  //         tag1: infoToChange.tag1,
-  //         tag2: infoToChange.tag2
-  //       }
-  //     }, function(err, results){
-  //       if(err){console.error('Error in BlockService createBlock label', err);}
-  //       callback(null, results);
-  //     });
-  //   }); 
-
-  // socket.on('upvotePost', function(infoToChange){
-  //     var query = `
-  //     MERGE (n:Crosspost {name:{nodename}, content:{nodecontent}, upvotes:1})
-  //     MERGE (t1:Tag {name:{tag1}}), (t2:Tag {name:{tag2}}))
-  //     MERGE (t2)<-[:TAGGED {upvotes:1}]-(n)-[:TAGGED {upvotes:1}]->(t1)
-  //     `;
-  //     db.cypher({
-  //       query: query,
-  //       params: {
-  //         nodename: infoToChange.nodename,
-  //         nodecontent: infoToChange.nodecontent,
-  //         tag1: infoToChange.tag1,
-  //         tag2: infoToChange.tag2
-  //       }
-  //     }, function(err, results){
-  //       if(err){console.error('Error in BlockService createBlock label', err);}
-  //       callback(null, results);
-  //     });
-  //   }); 
 
     socket.on('retrieveDatabase', function(infoToAdd){
     	var query = `

@@ -11,44 +11,51 @@
 <script src="linkify-html.js"></script> -->
 
 
-<title>Crossroads</title>
+<title>Crossroads - Intersectional Shitposting</title>
 </head>
 <body>
 
-<h1>Crossroads</h1>
+<span id="titlespan">Crossroads</span><span> | Status: </span><span id="statusUpdate"></span>
 
 <div id="adjacentblocks">
 
-<div id="d3frame" min-width="1000px">
-	<svg ></svg>
-</div>
-
 <div id="previewframe">
-<button id="upvote">Love it</button>
+<div id="previewframeTopSpace"></div>
+<div id="postNameInModalPostOnly"></div>
+<button id="upvote" onclick="upvotePost()">Love it</button>
 <button id="downvote">Hate it</button>
-<button id="tagIt">Tag it</button>
-<button id="closeWindow" onclick="document.getElementById('previewframe').style.display='none';">Close</button>
+<button id="tagIt" onclick="tagPost()">Tag it</button>
+<button id="closeWindow" onclick="closePreviewFrame()">Close</button>
+
+<div class="autocomplete" style="width:300px;">
+<input type="text" id="newTagInput" maxlength="20" placeholder="enter your tag (autolowercase)"></input>
+</div>
 <br/>
 <hr/>
 <div id="previewContent">test</div>
 </div>
 
-<div id="upvoteModal">
-<div id="tagNameInModal"></div>
-<button id="upvoteTag">Upvote tag?</button>
+<div id="d3frame" min-width="1000px">
+	<button id="uploadNewPostButton" onclick="document.getElementById('submitnew').style.display='block';">+</button>
+	<svg ></svg>
 </div>
 
 
+<div id="upvoteTagModal">
+<span>Upvote&nbsp;</span><span id="tagNameInModal"></span><span>&nbsp;tag on post&nbsp;</span><span id="postNameInModal"></span><span>&nbsp;?</span>
+<div id="contentInModal"></div>
+<hr/>
+<button id="upvoteTag" onclick="upvoteTag()">Upvote tag?</button>
+<button class="closeWindow" onclick="document.getElementById('upvoteTagModal').style.display='none';">Close</button>
+</div>
 
 
 <div id="submitnew">
-<input type="text" id="nodename" class="submissionslot" placeholder="post title goes here"></input>
-<input type="text" id="userInputtedContent" class="submissionslot" placeholder="link goes here"></input>
-<br/>
-<input type="text" id="tag1" class="submissionslot" placeholder="tag1 (must fill!)"></input><br/>
-<input type="text" id="tag2" placeholder="tag2"></input><br/>
-<!-- <button id="addTagForUpload" onclick="showAdditionalTagInput()">Add Tag</button>
- --><button id="upload" onclick="sendNewPostToServer()" disabled="disabled">Upload</button>
+<input type="text" id="nodename"  maxlength="150" class="submissionslot" placeholder="post title goes here"></input>
+<input type="text" id="userInputtedContent" class="submissionslot" placeholder="link goes here"></input><br/>
+<input type="text" id="tag1" maxlength="20" class="submissionslot" placeholder="tag1 (must fill!)"></input><br/>
+<input type="text" id="tag2" maxlength="20" placeholder="tag2 (optional)"></input><br/>
+<button id="upload" onclick="sendNewPostToServer()" disabled="disabled">Upload</button>
 </div>
 
 </div>
@@ -57,6 +64,12 @@
 	var socket = io();
 	socket.emit('retrieveDatabase');
 	var dbresults = {"nodes":[], "links":[]};
+	var mouseCoordinates = [0, 0];
+	var selectedNode = null;
+	var clickOnAddNewTag = false;
+	
+	var existingTagArray = [];
+
 
 	linkifyOptions = {
 	  attributes: null,
@@ -94,8 +107,62 @@
 				tag2: document.getElementById('tag2').value.toLowerCase()
 			});			
 		}
+		location.reload();
 	}
 
+	function upvoteTag(){
+		socket.emit('upvoteTag', {
+			nodename: document.getElementById('postNameInModal').innerHTML,
+			nodecontent: document.getElementById('contentInModal').innerHTML,
+			tag1: document.getElementById('tagNameInModal').innerHTML
+		});
+		document.getElementById('upvoteTagModal').style.display = "none";
+	}
+
+	function upvotePost(){
+		socket.emit('upvotePost', {
+			nodename: document.getElementById('postNameInModalPostOnly').innerHTML,
+			nodecontent: document.getElementById('contentInModal').innerHTML
+		});
+		document.getElementById('previewframe').style.display = "none";
+	}
+
+	function tagPost(){
+		var newTagInput = document.getElementById('newTagInput');
+		if(clickOnAddNewTag==true){
+			if(existingTagArray.indexOf(newTagInput.value.toLowerCase()) === -1){
+				socket.emit('tagPost', {
+					nodename: document.getElementById('postNameInModalPostOnly').innerHTML,
+					nodecontent: document.getElementById('contentInModal').innerHTML,
+					newtag:	newTagInput.value.toLowerCase()	
+				});				
+			}else{
+				socket.emit('upvoteTag', {
+					nodename: document.getElementById('postNameInModalPostOnly').innerHTML,
+					nodecontent: document.getElementById('contentInModal').innerHTML,
+					tag1: newTagInput.value.toLowerCase()
+				});
+			}
+			newTagInput.value = "";
+			newTagInput.style.display = "none";
+			document.getElementById("tagIt").innerHTML = "Tag it";
+			document.getElementById('previewframe').style.display = "none";
+			clickOnAddNewTag=false;
+		}else{
+			newTagInput.style.display = "block";
+			document.getElementById("tagIt").innerHTML = "Submit tag?";
+			clickOnAddNewTag=true;
+		}
+	}
+
+	function closePreviewFrame(){
+		var newTagInput = document.getElementById("newTagInput");
+		newTagInput.value = "";
+		newTagInput.style.display = "none";
+		document.getElementById("previewframe").style.display="none";
+		clickOnAddNewTag=false;
+		document.getElementById("tagIt").innerHTML="Tag it";
+	}
 
 	// function showAdditionalTagInput(){
 	// 	if(window.getComputedStyle(document.getElementById("tag2")).display=="none"){
@@ -107,7 +174,7 @@
 
 	var inputs = $(".submissionslot");
 
-	var validateInputs = function validateInputs(inputs) {
+	var validateInputs = function validateInputs(inputs){
 	  var validForm = true;
 	  inputs.each(function(index) {
 	    var input = $(this);
@@ -119,14 +186,13 @@
 	  return validForm;
 	}
 
-
-	inputs.change(function() {
-	  if (validateInputs(inputs)) {
-	    document.getElementById("upload").removeAttribute("disabled");
-	  }
+	inputs.change(function(){
+	    if (validateInputs(inputs)) {
+	    	document.getElementById("upload").removeAttribute("disabled");
+	    }
 	});
 
-	text_truncate = function(str, length, ending) {
+	text_truncate = function(str, length, ending){
 	    if (length == null) {
 	      length = 100;
 	    }
@@ -146,53 +212,52 @@
 		var k;
 		var promise1 = new Promise(function(resolve, reject){
 			for(i=0; i<results.length; i++){
-						//console.log(results[i]);
-						k = i+1;
-						var foundPrev = false;
-						var thisPostData = results[i]['post'];
-						
-						for(obj of Object.values(dbresults.nodes)){
-							if(obj.id==thisPostData){
-								foundPrev=true;
-								thisPostData = obj.id;
-								break;
-							}
+				//console.log(results[i]);
+				k = i+1;
+				var foundPrev = false;
+				var thisPostData = results[i]['post'];
+				
+				for(obj of Object.values(dbresults.nodes)){
+					if(obj.id==thisPostData){
+						foundPrev=true;
+						thisPostData = obj.id;
+						break;
+					}
+				}
+				//console.log(dbresults.nodes.indexOf({id:results[i]['post']}));
+				if(foundPrev==false){
+					dbresults.nodes.push({id:results[i]['post'], upvotes:results[i]['upvotes'], content:results[i]['content']});
+				}
+				//if k is undefined, continue loop to prevent error from next expression
+				if(results[k] == undefined){
+					continue;
+				}else{
+					var thisNextPostData = results[k]['post'];
+					for(obj of Object.values(dbresults.nodes)){
+						if(obj.id==thisNextPostData){
+							foundPrev=true;
+							thisNextPostData = obj.id;
+							break;
 						}
-						//console.log(dbresults.nodes.indexOf({id:results[i]['post']}));
-						if(foundPrev==false){
-							dbresults.nodes.push({id:results[i]['post'], upvotes:results[i]['upvotes'], content:results[i]['content']});
-						}
-						//if k is undefined, continue loop to prevent error from next expression
-						if(results[k] == undefined){
-							continue;
-						}else{
-							var thisNextPostData = results[k]['post'];
-							for(obj of Object.values(dbresults.nodes)){
-								if(obj.id==thisNextPostData){
-									foundPrev=true;
-									thisNextPostData = obj.id;
-									break;
-								}
-							}
-							if(results[i]['tags'][0][0]==results[k]['tags'][0][0]){
-								dbresults.links.push({source:thisPostData, target:thisNextPostData, tag:results[i]['tags'][0]});
-							}
-						}
+					}
+					var thisPostTag = results[i]['tags'][0];
+					if(results[i]['tags'][0][0]==results[k]['tags'][0][0]){
+						existingTagArray.indexOf(thisPostTag) === -1 ? existingTagArray.push(thisPostTag) : console.log("This item already exists");
+						dbresults.links.push({source:thisPostData, target:thisNextPostData, tag:thisPostTag});
+					}
+				}
 			}
-
 			console.log("test");
 			resolve(dbresults);
 		});
 
 		promise1.then(function(data){
-
-			console.log(data);
-			
+			//console.log(data);
+			console.log(existingTagArray);
 			var svg = d3.select("svg")
 			    .attr("width", 2000)
 			    .attr("height", 2000)
 			    .on("mousemove", mousemove);
-   				//.on("mousedown", mousedownCanvas);
 
 			var simulation = d3.forceSimulation()
 				.force("collision", d3.forceCollide().radius(70))
@@ -219,10 +284,11 @@
 				.append("text")
 				.on("mousedown", clickOnNode);
 
-			postTitle.style("fill", "#0000ff")
+			postTitle.style("fill", "#000000")
 				.attr("width", "10")
 			    .attr("height", "10")
-			    .text(function(d) { return text_truncate(d.id, 17); });
+			    .style("fill","#ffd24d")
+			    .text(function(d) { return text_truncate(d.id, 16); });
 
 			var cursor = svg.append("circle")
 			    .attr("r", 30)
@@ -247,18 +313,17 @@
 			     .attr("class", "gLink")
 			     .style("font-size", "13px")
 			     .attr("x", "50")
-			     .attr("y", "-5")
+			     .attr("y", "-4")
 			     .attr("text-anchor", "start")
-			     .style("fill","#000")
+			     .style("fill","#ffd24d")
 			     .append("textPath")
-			     .attr("xlink:href",function(d,i) { return "#linkId_" + i;})
-			     .text(function(d) { 
-			         return d.tag; //Can be dynamic via d object 
-			     })
+			     .attr("xlink:href",function(d,i){ return "#linkId_" + i; })
+			     .text(function(d){ return d.tag; })
 			     .on("mousedown", clickOnTag);
 
-			function mousemove() {
-			  cursor.attr("transform", "translate(" + String(d3.mouse(this)) + ")");
+			function mousemove(){
+				mouseCoordinates = d3.mouse(this);
+				cursor.attr("transform", "translate(" + String(d3.mouse(this)) + ")");
 			}
 
 			function ticked(){
@@ -276,50 +341,53 @@
 				});
 			}
 
-			function mousedownCanvas() {
-			  var point = d3.mouse(this),
-			      node = {x: point[0], y: point[1]},
-			      n = data.nodes.push(node);
+			// function mousedownCanvas(){
+			//   var point = d3.mouse(this),
+			//       node = {x: point[0], y: point[1]},
+			//       n = data.nodes.push(node);
 
-			  // add links to any nearby nodes
-			  data.nodes.forEach(function(target) {
-			    var x = target.x - node.x,
-			        y = target.y - node.y;
-			    if (Math.sqrt(x * x + y * y) < 30) {
-			      data.links.push({source: node, target: target});
-			    }
-			  });
+			//   // add links to any nearby nodes
+			//   data.nodes.forEach(function(target) {
+			//     var x = target.x - node.x,
+			//         y = target.y - node.y;
+			//     if (Math.sqrt(x * x + y * y) < 30) {
+			//       data.links.push({source: node, target: target});
+			//     }
+			//   });
 
-			  restart();
-			}
+			//   restart();
+			// }
 
-			function mousedownNode(d, i) {
-				//window.alert(d.id);
-			  data.nodes.splice(i, 1);
-			  data.links = data.links.filter(function(l) {
-			    return l.source !== d && l.target !== d;
-			  });
-			  d3.event.stopPropagation();
-
-			  restart();
-			}
+			// function mousedownNode(d, i){
+			// 	data.nodes.splice(i, 1);
+			// 	data.links = data.links.filter(function(l){ return l.source !== d && l.target !== d; });
+			// 	d3.event.stopPropagation();
+			// 	restart();
+			// }
 
 			function clickOnTag(d, i){
-				console.log(d.tag);
+				console.log(d);
+				var upvoteModalElement = document.getElementById('upvoteTagModal').style;
 				document.getElementById('tagNameInModal').innerHTML = d.tag;
-				document.getElementById('upvoteModal').style.display = "block";
-
+				document.getElementById('contentInModal').innerHTML = d.source.content;
+				document.getElementById('postNameInModal').innerHTML = d.source.id;
+				upvoteModalElement.left = String(mouseCoordinates[0])+"px";
+				upvoteModalElement.top = String(mouseCoordinates[1])+"px";
+				upvoteModalElement.display = "block";
 			}
 
 			function clickOnNode(d, i){
 				//previewFrame.innerHTML = linkifyHtml(d.content, linkifyOptions);
 				//linkifyStr(previewFrame, linkifyOptions);
+				console.log(d);
+				document.getElementById('postNameInModalPostOnly').innerHTML = d.id;
+				document.getElementById('contentInModal').innerHTML = d.content;
 				previewContent.innerHTML = "<a href="+d.content+">"+d.content+"</a>";
 				document.getElementById('previewframe').style.display = "block";
 				//window.alert(d.content);
 			}
 
-			function restart() {
+			function restart(){
 			  node = node.data(data.nodes);
 
 			  node.enter().insert("circle", ".cursor")
@@ -344,18 +412,18 @@
 			      .links(data.links);
 			}
 
-			function dragstarted(d) {
+			function dragstarted(d){
 			  if (!d3.event.active){ simulation.alphaTarget(0.3).restart();}
 			  d.fx = d.x;
 			  d.fy = d.y;
 			}
 
-			function dragged(d) {
+			function dragged(d){
 			  d.fx = d3.event.x;
 			  d.fy = d3.event.y;
 			}
 
-			function dragended(d) {
+			function dragended(d){
 			  if (!d3.event.active){simulation.alphaTarget(0);}
 			  d.fx = null;
 			  d.fy = null;
@@ -368,6 +436,106 @@
 		handleRetrievedDatabase(results);
 	});
 
+	function autocomplete(inp, arr) {
+	  /*the autocomplete function takes two arguments,
+	  the text field element and an array of possible autocompleted values:*/
+	  var currentFocus;
+	  /*execute a function when someone writes in the text field:*/
+	  inp.addEventListener("input", function(e) {
+	      var a, b, i, val = this.value;
+	      /*close any already open lists of autocompleted values*/
+	      closeAllLists();
+	      if (!val) { return false;}
+	      currentFocus = -1;
+	      /*create a DIV element that will contain the items (values):*/
+	      a = document.createElement("DIV");
+	      a.setAttribute("id", this.id + "autocomplete-list");
+	      a.setAttribute("class", "autocomplete-items");
+	      /*append the DIV element as a child of the autocomplete container:*/
+	      this.parentNode.appendChild(a);
+	      /*for each item in the array...*/
+	      for (i = 0; i < arr.length; i++) {
+	        /*check if the item starts with the same letters as the text field value:*/
+	        if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+	          /*create a DIV element for each matching element:*/
+	          b = document.createElement("DIV");
+	          /*make the matching letters bold:*/
+	          b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+	          b.innerHTML += arr[i].substr(val.length);
+	          /*insert a input field that will hold the current array item's value:*/
+	          b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+	          /*execute a function when someone clicks on the item value (DIV element):*/
+	              b.addEventListener("click", function(e) {
+	              /*insert the value for the autocomplete text field:*/
+	              inp.value = this.getElementsByTagName("input")[0].value;
+	              /*close the list of autocompleted values,
+	              (or any other open lists of autocompleted values:*/
+	              closeAllLists();
+	          });
+	          a.appendChild(b);
+	        }
+	      }
+	  });
+	  /*execute a function presses a key on the keyboard:*/
+	  inp.addEventListener("keydown", function(e) {
+	      var x = document.getElementById(this.id + "autocomplete-list");
+	      if (x) x = x.getElementsByTagName("div");
+	      if (e.keyCode == 40) {
+	        /*If the arrow DOWN key is pressed,
+	        increase the currentFocus variable:*/
+	        currentFocus++;
+	        /*and and make the current item more visible:*/
+	        addActive(x);
+	      } else if (e.keyCode == 38) { //up
+	        /*If the arrow UP key is pressed,
+	        decrease the currentFocus variable:*/
+	        currentFocus--;
+	        /*and and make the current item more visible:*/
+	        addActive(x);
+	      } else if (e.keyCode == 13) {
+	        /*If the ENTER key is pressed, prevent the form from being submitted,*/
+	        e.preventDefault();
+	        if (currentFocus > -1) {
+	          /*and simulate a click on the "active" item:*/
+	          if (x) x[currentFocus].click();
+	        }
+	      }
+	  });
+	  function addActive(x) {
+	    /*a function to classify an item as "active":*/
+	    if (!x) return false;
+	    /*start by removing the "active" class on all items:*/
+	    removeActive(x);
+	    if (currentFocus >= x.length) currentFocus = 0;
+	    if (currentFocus < 0) currentFocus = (x.length - 1);
+	    /*add class "autocomplete-active":*/
+	    x[currentFocus].classList.add("autocomplete-active");
+	  }
+	  function removeActive(x) {
+	    /*a function to remove the "active" class from all autocomplete items:*/
+	    for (var i = 0; i < x.length; i++) {
+	      x[i].classList.remove("autocomplete-active");
+	    }
+	  }
+	  function closeAllLists(elmnt) {
+	    /*close all autocomplete lists in the document,
+	    except the one passed as an argument:*/
+	    var x = document.getElementsByClassName("autocomplete-items");
+	    for (var i = 0; i < x.length; i++) {
+	      if (elmnt != x[i] && elmnt != inp) {
+	      x[i].parentNode.removeChild(x[i]);
+	    }
+	  }
+	}
+	/*execute a function when someone clicks in the document:*/
+	document.addEventListener("click", function (e) {
+	    closeAllLists(e.target);
+	});
+	}
+
+	autocomplete(document.getElementById("newTagInput"), existingTagArray);
+	autocomplete(document.getElementById("tag1"), existingTagArray);
+	autocomplete(document.getElementById("tag2"), existingTagArray);
 
 </script>
 
